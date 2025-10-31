@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:confetti/confetti.dart';
 // lightweight html entity unescape helper (covers common entities from OpenTDB)
 
 String unescapeHtml(String input) {
@@ -447,6 +448,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   bool _loading = false;
   late final AnimationController _animController;
   late final Animation<double> _pulse;
+  late final ConfettiController _confettiController;
 
   @override
   void initState() {
@@ -458,10 +460,17 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       else if (s == AnimationStatus.dismissed) _animController.forward();
     });
     _animController.forward();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    // auto-play confetti for high scores
+    final pct = widget.total > 0 ? widget.score / widget.total : 0.0;
+    if (pct > 0.7) {
+      _confettiController.play();
+    }
   }
 
   @override
   void dispose() {
+    _confettiController.dispose();
     _animController.dispose();
     super.dispose();
   }
