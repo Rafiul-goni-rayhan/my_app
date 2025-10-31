@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:confetti/confetti.dart';
+import 'package:lottie/lottie.dart';
 // lightweight html entity unescape helper (covers common entities from OpenTDB)
 
 String unescapeHtml(String input) {
@@ -228,17 +229,18 @@ class _ConfigScreenState extends State<ConfigScreen> {
     setState(() => _loading = true);
     try {
       final qs = await _api.fetchQuestions(amount: _amount, categoryId: widget.category.id, difficulty: _difficulty == 'any' ? null : _difficulty);
+      if (!mounted) return;
       if (qs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No questions found for this configuration')));
         setState(() => _loading = false);
         return;
       }
-      if (!mounted) return;
-  if (!mounted) return;
-  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => QuizScreen(questions: qs, category: widget.category, amount: _amount, difficulty: _difficulty == 'any' ? null : _difficulty)));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => QuizScreen(questions: qs, category: widget.category, amount: _amount, difficulty: _difficulty == 'any' ? null : _difficulty)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -490,11 +492,20 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         ],
       );
     } else if (pct >= 0.4) {
+      // Medium: show a Lottie animation (thumbs-up / encouraging)
       return Column(
         children: [
           ScaleTransition(
             scale: _pulse,
-            child: const Icon(Icons.thumb_up, size: 80, color: Colors.lightBlue),
+            child: SizedBox(
+              width: 120,
+              height: 120,
+              child: Lottie.network(
+                'https://assets2.lottiefiles.com/packages/lf20_touohxv0.json',
+                fit: BoxFit.contain,
+                repeat: false,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           const Text('Good effort', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
@@ -503,11 +514,20 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         ],
       );
     } else {
+      // Poor: show a gentle Lottie encouragement animation
       return Column(
         children: [
           ScaleTransition(
             scale: _pulse,
-            child: const Icon(Icons.sentiment_dissatisfied, size: 80, color: Colors.grey),
+            child: SizedBox(
+              width: 120,
+              height: 120,
+              child: Lottie.network(
+                'https://assets2.lottiefiles.com/packages/lf20_jtbfg2nb.json',
+                fit: BoxFit.contain,
+                repeat: false,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           const Text('Keep trying', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black54)),
@@ -522,15 +542,15 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     setState(() => _loading = true);
     try {
       final qs = await _api.fetchQuestions(amount: widget.amount, categoryId: widget.category.id, difficulty: widget.difficulty);
+      if (!mounted) return;
       if (qs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No questions found for this configuration')));
         setState(() => _loading = false);
         return;
       }
-      if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => QuizScreen(questions: qs, category: widget.category, amount: widget.amount, difficulty: widget.difficulty)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
     setState(() => _loading = false);
   }
@@ -540,37 +560,56 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     final pct = widget.total > 0 ? widget.score / widget.total : 0.0;
     return Scaffold(
       appBar: AppBar(title: const Text('Results')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Category: ${widget.category.name}', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 12),
-            Text('Score: ${widget.score} / ${widget.total}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            // performance tier widget
-            _buildPerformanceWidget(pct),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _playAgainSameSettings,
-                child: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Play Again (same settings)'),
+      body: Stack(
+        children: [
+          // confetti layer (plays only for high scores)
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                emissionFrequency: 0.05,
+                numberOfParticles: 20,
+                maxBlastForce: 20,
+                minBlastForce: 5,
               ),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false);
-                },
-                child: const Text('Categories'),
-              ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Category: ${widget.category.name}', style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 12),
+                Text('Score: ${widget.score} / ${widget.total}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 24),
+                // performance tier widget
+                _buildPerformanceWidget(pct),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _playAgainSameSettings,
+                    child: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Play Again (same settings)'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false);
+                    },
+                    child: const Text('Categories'),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
