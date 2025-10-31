@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:confetti/confetti.dart';
 import 'package:lottie/lottie.dart';
+// compile-time flag to auto-demo the Results screen when set via
+// `--dart-define=AUTO_DEMO=true` during build/run. Useful for automated screenshots.
+const bool kAutoDemo = bool.fromEnvironment('AUTO_DEMO', defaultValue: false);
 // lightweight html entity unescape helper (covers common entities from OpenTDB)
 
 String unescapeHtml(String input) {
@@ -122,8 +125,28 @@ class Question {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // If AUTO_DEMO is enabled at compile/run time, navigate to the Results screen
+    // automatically to make capturing screenshots deterministic.
+    if (kAutoDemo) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        // small delay so the app can render the home UI briefly before navigating
+        await Future.delayed(const Duration(milliseconds: 700));
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ResultsScreen(score: 8, total: 10, category: Category(id: 0, name: 'Demo'), amount: 10)));
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -497,11 +520,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         children: [
           ScaleTransition(
             scale: _pulse,
-            child: SizedBox(
+              child: SizedBox(
               width: 120,
               height: 120,
-              child: Lottie.network(
-                'https://assets2.lottiefiles.com/packages/lf20_touohxv0.json',
+              child: Lottie.asset(
+                'assets/lottie/medium.json',
                 fit: BoxFit.contain,
                 repeat: false,
               ),
@@ -519,11 +542,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         children: [
           ScaleTransition(
             scale: _pulse,
-            child: SizedBox(
+              child: SizedBox(
               width: 120,
               height: 120,
-              child: Lottie.network(
-                'https://assets2.lottiefiles.com/packages/lf20_jtbfg2nb.json',
+              child: Lottie.asset(
+                'assets/lottie/poor.json',
                 fit: BoxFit.contain,
                 repeat: false,
               ),
