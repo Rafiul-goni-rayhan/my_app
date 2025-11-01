@@ -64,6 +64,7 @@ flutter:
     - assets/lottie/medium.json
     - assets/lottie/poor.json
     - assets/images/home_illustration.png
+    - assets/category_images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

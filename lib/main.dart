@@ -101,8 +101,26 @@ class ApiService {
 class Category {
   final int id;
   final String name;
-  Category({required this.id, required this.name});
-  factory Category.fromJson(Map<String, dynamic> j) => Category(id: j['id'], name: j['name']);
+  // local asset path for category image (optional)
+  final String imagePath;
+  Category({required this.id, required this.name, required this.imagePath});
+
+  factory Category.fromJson(Map<String, dynamic> j) => Category(
+        id: j['id'],
+        name: j['name'],
+        imagePath: _assetForCategoryName(j['name'] as String),
+      );
+}
+
+// Map a category name to a sane local asset path under assets/category_images/
+String _assetForCategoryName(String name) {
+  final slug = name
+      .toLowerCase()
+      .replaceAll('&', 'and')
+      .replaceAll(RegExp(r"[^a-z0-9]+"), '_')
+      .replaceAll(RegExp(r"_+"), '_')
+      .trim();
+  return 'assets/category_images/$slug.png';
 }
 
 class Question {
@@ -143,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // small delay so the app can render the home UI briefly before navigating
         await Future.delayed(const Duration(milliseconds: 700));
         if (!mounted) return;
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ResultsScreen(score: 8, total: 10, category: Category(id: 0, name: 'Demo'), amount: 10)));
+  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ResultsScreen(score: 8, total: 10, category: Category(id: 0, name: 'Demo', imagePath: _assetForCategoryName('Demo')), amount: 10)));
       });
     }
   }
@@ -270,13 +288,46 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           final cats = snapshot.data ?? [];
           return ListView.separated(
             itemCount: cats.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             itemBuilder: (context, index) {
               final c = cats[index];
-              return ListTile(
-                title: Text(c.name),
-                trailing: const Icon(Icons.chevron_right),
+              return GestureDetector(
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ConfigScreen(category: c))),
+                child: Card(
+                  elevation: 6,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // image at top for the category
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                        child: SizedBox(
+                          height: 120,
+                          child: Image.asset(
+                            c.imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, st) => Container(
+                              color: Colors.grey[200],
+                              child: const Center(child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text(c.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+                            const Icon(Icons.chevron_right, color: Colors.black54),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           );
