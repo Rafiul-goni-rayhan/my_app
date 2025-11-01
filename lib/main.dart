@@ -362,7 +362,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
   bool _loading = false;
 
   void _startQuiz() async {
-    if (!_formKey.currentState!.validate()) return;
+    // No longer relying on a Form with TextFormField; validation is handled
+    // via UI controls (slider and dropdowns). Skip form validation if there's
+    // no Form mounted.
+    if (_formKey.currentState != null) {
+      if (!_formKey.currentState!.validate()) return;
+    }
     setState(() => _loading = true);
     try {
       final qs = await _api.fetchQuestions(
