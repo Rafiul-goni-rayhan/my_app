@@ -151,33 +151,87 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // set Home screen background to plain white as requested
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 24),
-              // Hero illustration (placeholder icon)
-              Container(
-                height: 320,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0,4))]),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.quiz_rounded, size: 96, color: Color(0xFF303F9F)),
-                    const SizedBox(height: 12),
-                    const Text('Quizzical', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    const Text('Rayhan 21cse050', style: TextStyle(fontSize: 14, color: Colors.black54)),
-                  ],
+              // central illustration area: try to load a local asset, fall back to a programmatic placeholder
+              Center(
+                child: SizedBox(
+                  width: 280,
+                  height: 280,
+                  child: Image.asset(
+                    'assets/images/home_illustration.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stack) {
+                      // placeholder illustration built from simple widgets (yellow question mark + purple face)
+                      return Container(
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0,6))]),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // large yellow question mark circle
+                            Positioned(
+                              top: 18,
+                              child: Container(
+                                width: 180,
+                                height: 180,
+                                decoration: BoxDecoration(color: Colors.amber[400], shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0,4))]),
+                                child: const Center(child: Icon(Icons.question_mark, size: 88, color: Colors.white)),
+                              ),
+                            ),
+                            // small purple face in front
+                            Positioned(
+                              bottom: 18,
+                              child: CircleAvatar(
+                                radius: 32,
+                                backgroundColor: const Color(0xFF6A1B9A),
+                                child: const Icon(Icons.face, size: 36, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-              const SizedBox(height: 28),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoriesScreen())),
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                child: const Text('GET STARTED', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 20),
+              // Title text
+              const Text(
+                'Quizzical',
+                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your_Name',
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
+              const Spacer(),
+              // GET STARTED button anchored at the bottom center
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: SizedBox(
+                  width: 220,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoriesScreen())),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF303F9F),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0)),
+                      elevation: 6,
+                    ),
+                    child: const Text('GET STARTED', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  ),
+                ),
               ),
             ],
           ),
