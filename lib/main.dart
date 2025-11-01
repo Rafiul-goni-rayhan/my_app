@@ -80,20 +80,21 @@ class ApiService {
     required int amount,
     required int categoryId,
     String? difficulty, // 'easy','medium','hard' or null
+    String? type, // 'multiple' or 'boolean' or null
   }) async {
     final params = {
       'amount': amount.toString(),
       'category': categoryId.toString(),
-      'type': 'multiple',
     };
+    if (type != null && type != 'any') params['type'] = type;
     if (difficulty != null && difficulty != 'any') params['difficulty'] = difficulty;
     final uri = Uri.parse('$_base/api.php').replace(queryParameters: params);
     final res = await http.get(uri);
     if (res.statusCode != 200) throw Exception('Failed to load questions');
     final data = json.decode(res.body);
-  final results = (data['results'] as List)
-    .map((e) => Question.fromJson(e))
-    .toList();
+    final results = (data['results'] as List)
+        .map((e) => Question.fromJson(e))
+        .toList();
     return results;
   }
 }
@@ -356,6 +357,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _formKey = GlobalKey<FormState>();
   int _amount = 10;
   String _difficulty = 'any';
+  String _type = 'any';
   final _api = ApiService();
   bool _loading = false;
 
@@ -363,7 +365,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      final qs = await _api.fetchQuestions(amount: _amount, categoryId: widget.category.id, difficulty: _difficulty == 'any' ? null : _difficulty);
+      final qs = await _api.fetchQuestions(
+        amount: _amount,
+        categoryId: widget.category.id,
+        difficulty: _difficulty == 'any' ? null : _difficulty,
+        type: _type == 'any' ? null : _type,
+      );
       if (!mounted) return;
       if (qs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No questions found for this configuration')));
@@ -382,50 +389,111 @@ class _ConfigScreenState extends State<ConfigScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Start Quiz - ${widget.category.name}')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('Category: ${widget.category.name}', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 12),
-              TextFormField(
-                initialValue: '10',
-                decoration: const InputDecoration(labelText: 'Number of questions', border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  final n = int.tryParse(v ?? '');
-                  if (n == null || n <= 0 || n > 50) return 'Enter 1-50';
-                  return null;
-                },
-                onSaved: (v) => _amount = int.tryParse(v ?? '10') ?? 10,
-                onChanged: (v) {
-                  final n = int.tryParse(v);
-                  if (n != null) _amount = n;
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _difficulty,
-                items: const [
-                  DropdownMenuItem(value: 'any', child: Text('Any')),
-                  DropdownMenuItem(value: 'easy', child: Text('Easy')),
-                  DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                  DropdownMenuItem(value: 'hard', child: Text('Hard')),
-                ],
-                onChanged: (v) => setState(() => _difficulty = v ?? 'any'),
-                decoration: const InputDecoration(labelText: 'Difficulty', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 20),
+              // Top illustration
               SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _startQuiz,
-                  style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
-                  child: _loading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Start Quiz'),
+                height: 200,
+                child: Image.asset(
+                  'assets/images/config_illustration.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (ctx, err, st) => Container(
+                    decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12)),
+                    child: const Center(child: Icon(Icons.settings, size: 80, color: Colors.deepPurple)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('Quizzical', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const SizedBox(height: 6),
+              const Text('Configuration', style: TextStyle(fontSize: 18, color: Colors.black54)),
+              const SizedBox(height: 6),
+              Text(widget.category.name, style: const TextStyle(fontSize: 14, color: Colors.black45)),
+              const SizedBox(height: 18),
+
+              // Configuration card with form elements
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Number of Questions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Slider(
+                              value: _amount.toDouble(),
+                              min: 1,
+                              max: 50,
+                              divisions: 49,
+                              label: '$_amount',
+                              activeColor: const Color(0xFF303F9F),
+                              onChanged: (v) => setState(() => _amount = v.round()),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(width: 48, child: Text('$_amount', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600))),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      const Text('Difficulty Level', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue: _difficulty,
+                        items: const [
+                          DropdownMenuItem(value: 'any', child: Text('Any')),
+                          DropdownMenuItem(value: 'easy', child: Text('Easy')),
+                          DropdownMenuItem(value: 'medium', child: Text('Medium')),
+                          DropdownMenuItem(value: 'hard', child: Text('Hard')),
+                        ],
+                        onChanged: (v) => setState(() => _difficulty = v ?? 'any'),
+                        decoration: const InputDecoration(border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 12),
+
+                      const Text('Question Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue: _type,
+                        items: const [
+                          DropdownMenuItem(value: 'any', child: Text('Any')),
+                          DropdownMenuItem(value: 'multiple', child: Text('Multiple Choice')),
+                          DropdownMenuItem(value: 'boolean', child: Text('True / False')),
+                        ],
+                        onChanged: (v) => setState(() => _type = v ?? 'any'),
+                        decoration: const InputDecoration(border: OutlineInputBorder()),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: SizedBox(
+                  width: 220,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _startQuiz,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF303F9F),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0)),
+                      elevation: 6,
+                    ),
+                    child: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('START', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ),
             ],
