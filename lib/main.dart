@@ -351,7 +351,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _difficulty,
+                initialValue: _difficulty,
                 items: const [
                   DropdownMenuItem(value: 'any', child: Text('Any')),
                   DropdownMenuItem(value: 'easy', child: Text('Easy')),
@@ -444,7 +444,7 @@ class _QuizScreenState extends State<QuizScreen> {
     final q = widget.questions[_index];
     final progress = (_index + 1) / widget.questions.length;
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.category.name}')),
+  appBar: AppBar(title: Text(widget.category.name)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -535,8 +535,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
     _pulse = Tween<double>(begin: 0.9, end: 1.12).animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOut));
     _animController.addStatusListener((s) {
-      if (s == AnimationStatus.completed) _animController.reverse();
-      else if (s == AnimationStatus.dismissed) _animController.forward();
+      if (s == AnimationStatus.completed) {
+        _animController.reverse();
+      } else if (s == AnimationStatus.dismissed) {
+        _animController.forward();
+      }
     });
     _animController.forward();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
