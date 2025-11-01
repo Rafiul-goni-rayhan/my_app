@@ -303,8 +303,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       // image at top for the category
                       ClipRRect(
                         borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
-                        child: SizedBox(
-                          height: 120,
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
                           child: Image.asset(
                             c.imagePath,
                             fit: BoxFit.cover,
