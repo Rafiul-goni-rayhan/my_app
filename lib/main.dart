@@ -114,12 +114,19 @@ class Category {
 
 // Map a category name to a sane local asset path under assets/category_images/
 String _assetForCategoryName(String name) {
-  final slug = name
-      .toLowerCase()
-      .replaceAll('&', 'and')
-      .replaceAll(RegExp(r"[^a-z0-9]+"), '_')
-      .replaceAll(RegExp(r"_+"), '_')
-      .trim();
+  // Normalize the category name to a slug that matches filenames placed in
+  // assets/category_images/. We treat '&' as a separator (remove it) so
+  // "Science & Nature" -> "science_nature" and
+  // "Entertainment: Musicals & Theatres" -> "entertainment_musicals_theatres".
+  var slug = name.toLowerCase();
+  // replace ampersand with space so it becomes an underscore later
+  slug = slug.replaceAll('&', ' ');
+  // convert any non-alphanumeric characters to underscores
+  slug = slug.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  // collapse multiple underscores
+  slug = slug.replaceAll(RegExp(r'_+'), '_');
+  // trim leading/trailing underscores
+  slug = slug.replaceAll(RegExp(r'^_|_$'), '');
   return 'assets/category_images/$slug.png';
 }
 
